@@ -4,12 +4,22 @@ export interface ProposalFrontMatter {
   company_name: string
   client_name: string
   project_title: string
+  project_subject: string
   date: string
   contact_email: string
   contact_phone: string
   company_domain: string
+  signer_name: string
+  signer_role: string
   socials: string[]
   [key: string]: string | string[]
+}
+
+export interface StageMeta {
+  fee: string
+  time: string
+  deliverables: string
+  note: string
 }
 
 export interface ProposalPage {
@@ -18,6 +28,7 @@ export interface ProposalPage {
   stageNumber?: number
   stageVersion?: string
   content: string
+  meta?: StageMeta
 }
 
 export interface ParsedProposal {

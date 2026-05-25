@@ -9,6 +9,7 @@ const props = defineProps<{
 
 const { variables } = useContractVariables()
 const iframeRef = ref<HTMLIFrameElement>()
+const iframeHeight = ref('400px')
 
 // Build filled vars map from the variables composable
 const filledVars = computed(() => {
@@ -25,44 +26,32 @@ const renderedHtml = computed(() => {
   return renderProposalHtml(parsed, filledVars.value)
 })
 
-const pageCount = computed(() => {
-  if (!props.markdown) return 0
-  return parseProposalMarkdown(props.markdown).pages.length
-})
-
-// Dynamic iframe height: each page is 297mm + 24px gap + 24px body padding top/bottom
-const iframeHeight = computed(() => {
-  const pages = pageCount.value
-  if (!pages) return '400px'
-  // 297mm ≈ 1123px at 96dpi, 24px gap between pages, 24px padding top + bottom
-  return `${pages * 1123 + (pages - 1) * 24 + 48}px`
-})
-
-// Write HTML to iframe whenever it changes
-watch(renderedHtml, (html) => {
+function updateIframeContent() {
   nextTick(() => {
     const iframe = iframeRef.value
     if (!iframe) return
     const doc = iframe.contentDocument
     if (!doc) return
     doc.open()
-    doc.write(html)
-    doc.close()
-  })
-}, { immediate: true })
-
-// Also write on mount
-onMounted(() => {
-  nextTick(() => {
-    const iframe = iframeRef.value
-    if (!iframe || !renderedHtml.value) return
-    const doc = iframe.contentDocument
-    if (!doc) return
-    doc.open()
     doc.write(renderedHtml.value)
     doc.close()
+
+    // After writing, measure the actual body height and size the iframe to fit
+    nextTick(() => {
+      setTimeout(() => {
+        const body = doc.body
+        if (body) {
+          iframeHeight.value = body.scrollHeight + 'px'
+        }
+      }, 100)
+    })
   })
-})
+}
+
+// Write HTML to iframe whenever it changes
+watch(renderedHtml, updateIframeContent, { immediate: true })
+
+onMounted(updateIframeContent)
 </script>
 
 <template>
@@ -73,6 +62,7 @@ onMounted(() => {
       :style="{ height: iframeHeight }"
       sandbox="allow-same-origin"
       frameborder="0"
+      scrolling="no"
     />
     <div v-if="isStreaming" class="proposal-preview__streaming">
       <div class="streaming-dot" />
@@ -87,11 +77,12 @@ onMounted(() => {
 }
 
 .proposal-preview__iframe {
-  width: calc(210mm + 48px + 2px);
+  width: 100%;
   border: none;
   border-radius: 4px;
   background: #C0C0C0;
   display: block;
+  overflow: hidden;
 }
 
 .proposal-preview__streaming {

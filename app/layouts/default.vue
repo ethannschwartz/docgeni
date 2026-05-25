@@ -8,7 +8,7 @@ const isDark = computed({
 </script>
 
 <template>
-  <div class="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+  <div class="min-h-screen flex flex-col h-screen bg-neutral-50 dark:bg-neutral-950">
     <header class="sticky top-0 z-50 border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl">
       <div class="max-w-screen-2xl mx-auto px-6 h-14 flex items-center justify-between">
         <div class="flex items-center gap-6">
@@ -46,6 +46,8 @@ const isDark = computed({
         </div>
       </div>
     </header>
-    <slot />
+    <div class="grow overflow-hidden">
+      <slot />
+    </div>
   </div>
 </template>

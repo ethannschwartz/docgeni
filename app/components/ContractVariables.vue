@@ -40,7 +40,9 @@ const groups = computed(() => [
           <UInput
             v-model="variable.value"
             :placeholder="variable.displayName"
-            size="sm"
+            size="lg"
+            class="w-full"
+            variant="subtle"
           />
         </div>
       </div>

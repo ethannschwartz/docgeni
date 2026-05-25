@@ -225,11 +225,14 @@ function loadDemoProposal() {
 company_name: "{{company_name}}"
 client_name: "{{client_name}}"
 project_title: "{{project_title}}"
+project_subject: "{{project_subject}}"
 date: "{{date}}"
 contact_email: "{{contact_email}}"
 contact_phone: "{{contact_phone}}"
 company_domain: "{{company_domain}}"
-socials: ["Linkedin", "Website", "Instagram"]
+signer_name: "{{signer_name}}"
+signer_role: "{{signer_role}}"
+socials: ["Linkedin", "Instagram"]
 ---
 # Hello
 
@@ -240,9 +243,6 @@ Thank you for taking the time to discuss your upcoming project with us. We're ex
 This proposal outlines our recommended approach, broken into clear stages with transparent pricing. We believe in collaborative partnerships built on trust, creativity, and results.
 
 We look forward to getting started.
-
-Warm regards,
-{{company_name}}
 
 # Stage 1 | Discovery & Research | 1.0
 
@@ -302,36 +302,29 @@ We'll bring the approved designs to life with clean, performant code. Our develo
 - Performance optimization
 - Launch support & handover
 
+## Note
+One round of consolidated feedback included.
+
 # Fee
 
-| Stage | Fee | Timeline |
-|-------|-----|----------|
-| Discovery & Research | {{stage_1_fee}} | {{stage_1_time}} |
-| Design & Prototyping | {{stage_2_fee}} | {{stage_2_time}} |
-| Development & Launch | {{stage_3_fee}} | {{stage_3_time}} |
-| **Total** | **{{total_fee}}** | **{{total_time}}** |
+| Stage | Description | Cost |
+|-------|-------------|------|
+| 1.0 | Discovery & Research | {{stage_1_fee}} |
+| 2.0 | Design & Prototyping | {{stage_2_fee}} |
+| 3.0 | Development & Launch | {{stage_3_fee}} |
+| **Total** | | **{{total_fee}}** |
 
-## Payment Terms
+**Payment Terms:** 50% deposit upon project commencement, 25% upon design approval, 25% upon project completion. All invoices are due within 14 days of receipt.
 
-- 50% deposit upon project commencement
-- 25% upon design approval
-- 25% upon project completion
-- All invoices are due within 14 days of receipt
+**All costs exclude:** VAT, third-party licensing fees, stock imagery, and hosting costs unless otherwise specified.
 
 # Summary
 
-**Total Project Fee:** {{total_fee}}
+**Total Fee:** {{total_fee}}
+
 **Estimated Timeline:** {{total_time}}
 
 This proposal is valid for 30 days from the date of issue.
-
-**Accepted by:**
-
-Name: ________________________
-
-Signature: ________________________
-
-Date: ________________________
 
 # Appendix
 
@@ -347,13 +340,13 @@ Date: ________________________
 
 All intellectual property created during this project will be transferred to the client upon final payment. We retain the right to showcase the work in our portfolio unless otherwise agreed.
 
-# Thank You`
+# Thank you`
   extractVariables(markdown.value)
 }
 </script>
 
 <template>
-  <div class="flex h-[calc(100vh-3.5rem)]">
+  <div class="flex h-full">
     <!-- Main content area -->
     <div class="flex-1 overflow-y-auto py-8 px-4">
       <div class="max-w-[240mm] mx-auto">
@@ -502,7 +495,7 @@ All intellectual property created during this project will be transferred to the
     >
       <aside
         v-if="sidebarOpen && markdown"
-        class="w-80 border-l border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-y-auto p-5 shrink-0"
+        class="w-80 overflow-y-auto border-l border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 shrink-0"
       >
         <ContractVariables />
       </aside>
