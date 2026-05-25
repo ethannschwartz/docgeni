@@ -1,0 +1,56 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/* A4 page dimensions */
+.contract-page {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 25mm 20mm;
+  background: white;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+  margin: 0 auto 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.dark .contract-page {
+  background: var(--color-neutral-900);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Variable highlight */
+.contract-variable {
+  background: color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+  border-radius: 4px;
+  padding: 1px 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.contract-variable:hover {
+  background: color-mix(in srgb, var(--color-primary-500) 25%, transparent);
+  border-color: var(--color-primary-500);
+}
+
+/* Streaming animation */
+@keyframes pulse-text {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.streaming-cursor::after {
+  content: '▊';
+  animation: pulse-text 1s ease-in-out infinite;
+  color: var(--color-primary-500);
+}
+
+/* Print styles */
+@media print {
+  .contract-page {
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+    page-break-after: always;
+  }
+}

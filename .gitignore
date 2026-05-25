@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Nuxt
+.nuxt/
+.output/
+dist/
+
+# Environment
+.env
+
+# IDE
+.idea/
+.vscode/
+*.sw?
+
+# OS
+.DS_Store
+
+# Logs
+*.log
