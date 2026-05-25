@@ -13,8 +13,8 @@ const isDark = computed({
       <div class="max-w-screen-2xl mx-auto px-6 h-14 flex items-center justify-between">
         <div class="flex items-center gap-6">
           <NuxtLink to="/" class="flex items-center gap-2 font-semibold text-lg">
-            <UIcon name="i-lucide-file-text" class="text-primary-500 size-5" />
-            DocGen
+            <UIcon name="i-lucide-file-plus" class="text-primary-500 size-5" />
+            docgeni
           </NuxtLink>
           <nav class="flex items-center gap-1">
             <UButton
