@@ -365,7 +365,7 @@ body {
   -webkit-font-smoothing: antialiased;
   color: var(--ink);
   letter-spacing: -0.005em;
-  background: #C0C0C0;
+  background: transparent;
   padding: 24px;
   display: flex;
   flex-direction: column;

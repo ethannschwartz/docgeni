@@ -80,7 +80,7 @@ onMounted(updateIframeContent)
   width: 100%;
   border: none;
   border-radius: 4px;
-  background: #C0C0C0;
+  background: transparent;
   display: block;
   overflow: hidden;
 }

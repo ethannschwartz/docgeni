@@ -578,16 +578,16 @@ All intellectual property created during this project will be transferred to the
 
     <!-- Variables sidebar -->
     <Transition
-      enter-active-class="transition-all duration-300 ease-out"
-      enter-from-class="w-0 opacity-0"
-      enter-to-class="w-80 opacity-100"
-      leave-active-class="transition-all duration-200 ease-in"
-      leave-from-class="w-80 opacity-100"
-      leave-to-class="w-0 opacity-0"
+      enter-active-class="transition-all duration-300 ease-out overflow-hidden"
+      enter-from-class="!w-0 !min-w-0 !p-0 opacity-0"
+      enter-to-class="w-96 opacity-100"
+      leave-active-class="transition-all duration-200 ease-in overflow-hidden"
+      leave-from-class="w-96 opacity-100"
+      leave-to-class="!w-0 !min-w-0 !p-0 opacity-0"
     >
       <aside
         v-if="sidebarOpen && markdown"
-        class="w-80 overflow-y-auto border-l border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 shrink-0"
+        class="w-96 overflow-y-auto border-l border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 shrink-0"
       >
         <ContractVariables />
       </aside>
