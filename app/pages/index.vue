@@ -1,20 +1,117 @@
 <script setup lang="ts">
 import { parseProposalMarkdown } from '~/utils/proposalParser'
 import { renderProposalHtml } from '~/utils/proposalRenderer'
+import { parseContractMarkdown } from '~/utils/contractParser'
+import { renderContractHtml } from '~/utils/contractRenderer'
 
+const route = useRoute()
+const router = useRouter()
 const { markdown, isGenerating, error, progress, uploadAndGenerate, generateFromText } = useContractGenerator()
 const { variables, extractVariables } = useContractVariables()
 const { documentType } = useProposalState()
+const { createDocument, updateDocument, getDocument, loadFromStorage } = useDocuments()
 
 const sidebarOpen = ref(true)
 const showRawMarkdown = ref(false)
+const currentDocId = useState<string | null>('currentDocId', () => null)
+const autoSaveTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+
+// Load documents from localStorage on mount, then load doc if ?id= present
+onMounted(() => {
+  loadFromStorage()
+  const id = route.query.id as string | undefined
+  if (id) {
+    loadDocumentById(id)
+  }
+})
+
+// Watch for route query changes (e.g. navigating back with a different id)
+watch(() => route.query.id, (id) => {
+  if (id && typeof id === 'string') {
+    loadDocumentById(id)
+  }
+})
+
+function loadDocumentById(id: string) {
+  const doc = getDocument(id)
+  if (!doc) return
+  currentDocId.value = id
+  documentType.value = doc.type
+  markdown.value = doc.markdown
+  variables.value = doc.variables.map(v => ({ ...v }))
+}
+
+// Auto-save: debounced watch on markdown + variables
+watch([markdown, variables], () => {
+  if (!currentDocId.value || isGenerating.value) return
+  if (autoSaveTimer.value) clearTimeout(autoSaveTimer.value)
+  autoSaveTimer.value = setTimeout(() => {
+    if (currentDocId.value && markdown.value) {
+      updateDocument(currentDocId.value, {
+        markdown: markdown.value,
+        variables: variables.value.map(v => ({ ...v })),
+        type: documentType.value,
+      })
+    }
+  }, 1000)
+}, { deep: true })
 
 // Re-extract variables when markdown changes
 watch(markdown, (val) => {
   if (val) extractVariables(val)
 })
 
+// After generation completes, auto-create a saved document
+watch(isGenerating, (generating, wasGenerating) => {
+  if (wasGenerating && !generating && markdown.value && !currentDocId.value) {
+    const title = extractTitle(markdown.value, documentType.value)
+    const doc = createDocument({
+      title,
+      type: documentType.value,
+      markdown: markdown.value,
+      variables: variables.value.map(v => ({ ...v })),
+    })
+    currentDocId.value = doc.id
+    router.replace({ query: { id: doc.id } })
+  }
+})
+
+function extractTitle(md: string, type: string): string {
+  const match = md.match(/^#\s+(.+)$/m)
+  if (match?.[1]) return match[1].replace(/\{\{.*?\}\}/g, '').trim() || `Untitled ${type}`
+  return `Untitled ${type}`
+}
+
+function handleSave() {
+  if (!markdown.value) return
+  if (currentDocId.value) {
+    updateDocument(currentDocId.value, {
+      markdown: markdown.value,
+      variables: variables.value.map(v => ({ ...v })),
+      type: documentType.value,
+    })
+  } else {
+    const title = extractTitle(markdown.value, documentType.value)
+    const doc = createDocument({
+      title,
+      type: documentType.value,
+      markdown: markdown.value,
+      variables: variables.value.map(v => ({ ...v })),
+    })
+    currentDocId.value = doc.id
+    router.replace({ query: { id: doc.id } })
+  }
+}
+
+function handleNewDocument() {
+  currentDocId.value = null
+  markdown.value = ''
+  variables.value = []
+  router.replace({ query: {} })
+}
+
 function handleFileSelected(file: File) {
+  currentDocId.value = null
   uploadAndGenerate(file, documentType.value)
 }
 
@@ -55,20 +152,15 @@ async function handleExportPdf() {
     return
   }
 
-  // Contract export (existing logic)
-  const pagesEl = document.querySelector('.contract-editor')
-  if (!pagesEl) return
-
-  const { generateCSS } = useContractTheme()
+  // Contract export — same approach as proposals: send complete rendered HTML
+  const parsed = parseContractMarkdown(markdown.value)
+  const completeHtml = renderContractHtml(parsed, filledVars.value)
 
   try {
     const response = await fetch('/api/export-pdf', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        html: pagesEl.innerHTML,
-        css: generateCSS()
-      })
+      body: JSON.stringify({ completeHtml })
     })
 
     if (!response.ok) throw new Error('PDF export failed')
@@ -87,139 +179,121 @@ async function handleExportPdf() {
 
 // Demo contract
 function loadDemoContract() {
+  currentDocId.value = null
   documentType.value = 'contract'
-  markdown.value = `<!-- coverpage -->
-# Service Agreement
-
-## Between {{our_company_name}} and {{client_name}}
-
-Effective Date: {{effective_date}}
-
-Prepared by: {{our_contact_name}}
-
-{{our_company_address}}
-<!-- coverpage -->
-
-<!-- pagebreak -->
-
-## Table of Contents
-
-- [1. Services](#1-services)
-- [2. Compensation](#2-compensation)
-- [3. Term and Termination](#3-term-and-termination)
-- [4. Confidentiality](#4-confidentiality)
-- [5. Intellectual Property](#5-intellectual-property)
-
-<!-- pagebreak -->
-
-# 1. Services
-
-## 1.1 Scope of Work
-
-{{our_company_name}} (hereinafter referred to as the "Provider") agrees to provide the following services to {{client_name}} (hereinafter referred to as the "Client"):
-
-- **Software Development**: Custom application development as specified in Exhibit A
-- **Technical Consulting**: Up to {{consulting_hours}} hours per month of technical consultation
-- **Maintenance & Support**: Ongoing maintenance and bug fixes during the term of this agreement
-
-## 1.2 Deliverables
-
-The Provider shall deliver the following:
-
-1. Initial project plan within {{planning_days}} business days of contract execution
-2. Weekly progress reports every Friday
-3. Final deliverable by {{delivery_date}}
-
-> **Note**: All deliverables are subject to the acceptance criteria outlined in Exhibit B.
-
+  markdown.value = `---
+client_name: "{{client_name}}"
+document_type: "Service agreement"
+date: "{{date}}"
+supplier_name: "{{supplier_name}}"
+doc_ref: "{{doc_ref}}"
+signer_name: "{{signer_name}}"
+signer_position: "{{signer_position}}"
+signer_company: "{{signer_company}}"
+signed_date: "{{signed_date}}"
 ---
+# 0a. Your plan
 
-# 2. Compensation
+| Feature | Details |
+|---------|---------|
+| Services | Software development, technical consulting, maintenance |
+| Consulting hours | {{consulting_hours}} per month |
+| Planning timeline | {{planning_days}} business days |
+| Final delivery | {{delivery_date}} |
+| Total fee | {{total_fee}} |
 
-## 2.1 Fees
+# 0b. Payment schedule
 
-The Client agrees to pay the Provider a total fee of **{{total_fee}}** for the services described herein.
-
-| Milestone | Amount | Due Date |
+| Milestone | Amount | Due date |
 |-----------|--------|----------|
 | Project Kickoff | {{milestone_1_amount}} | {{milestone_1_date}} |
 | Mid-project Review | {{milestone_2_amount}} | {{milestone_2_date}} |
 | Final Delivery | {{milestone_3_amount}} | {{milestone_3_date}} |
 
-## 2.2 Payment Terms
+# 1. Process
 
-All invoices are due within **{{payment_terms}}** of receipt. Late payments shall accrue interest at a rate of {{interest_rate}} per month.
+### Commencement of Work
 
-<!-- pagebreak -->
+- Upon confirmation of the purchase order, work will commence within {{planning_days}} business days
+- The Provider will deliver an initial project plan outlining milestones and deliverables
+- Weekly progress reports will be provided every Friday
 
-# 3. Term and Termination
+### Deliverables
 
-## 3.1 Term
+- Custom application development as specified in the project plan
+- Up to {{consulting_hours}} hours per month of technical consultation
+- Ongoing maintenance and bug fixes during the term of this agreement
 
-This Agreement shall commence on {{effective_date}} and continue for a period of {{contract_duration}}, unless terminated earlier in accordance with this section.
+### Feedback Opportunities
 
-## 3.2 Termination for Convenience
+- The Client will have the opportunity to review and provide feedback at each milestone
+- All deliverables are subject to the acceptance criteria outlined in the project plan
 
-Either party may terminate this Agreement by providing {{notice_period}} written notice to the other party.
+# 2. Compensation
 
-## 3.3 Termination for Cause
+### Fees
 
-Either party may terminate this Agreement immediately if the other party:
+- The Client agrees to pay the Provider a total fee of **{{total_fee}}** for the services described herein
+- All invoices are due within **{{payment_terms}}** of receipt
+- Late payments shall accrue interest at a rate of {{interest_rate}} per month
 
-- Materially breaches any provision and fails to cure within **30 days** of written notice
-- Becomes insolvent or files for bankruptcy
-- Engages in willful misconduct or gross negligence
+### Payment Schedule
 
----
+- Payments are tied to project milestones as outlined in the payment schedule
+- The Provider reserves the right to pause work if payments are more than 14 days overdue
+
+# 3. Term and termination
+
+### Term
+
+- This Agreement shall commence on {{effective_date}} and continue for a period of {{contract_duration}}, unless terminated earlier in accordance with this section
+
+### Termination for Convenience
+
+- Either party may terminate this Agreement by providing {{notice_period}} written notice to the other party
+
+### Termination for Cause
+
+- Either party may terminate this Agreement immediately if the other party materially breaches any provision and fails to cure within **30 days** of written notice
+- Either party may terminate if the other becomes insolvent or files for bankruptcy
+- Either party may terminate if the other engages in willful misconduct or gross negligence
 
 # 4. Confidentiality
 
-Both parties agree to maintain the confidentiality of all proprietary information disclosed during the course of this Agreement. This obligation shall survive termination for a period of **{{confidentiality_period}}**.
+- Both parties agree to maintain the confidentiality of all proprietary information disclosed during the course of this Agreement
+- This obligation shall survive termination for a period of **{{confidentiality_period}}**
+- Confidential information does not include information that is publicly available, independently developed, or rightfully received from a third party
 
----
+# 5. Intellectual property
 
-# 5. Intellectual Property
+### Ownership
 
-## 5.1 Ownership
+- All intellectual property created by the Provider under this Agreement shall be the exclusive property of the **Client** upon full payment
 
-All intellectual property created by the Provider under this Agreement shall be the exclusive property of the **Client** upon full payment.
+### Pre-existing IP
 
-## 5.2 Pre-existing IP
+- Each party retains ownership of their pre-existing intellectual property
+- The Provider grants the Client a non-exclusive, perpetual license to use any pre-existing IP incorporated into the deliverables
 
-Each party retains ownership of their pre-existing intellectual property. The Provider grants the Client a non-exclusive, perpetual license to use any pre-existing IP incorporated into the deliverables.
+# 6. Warranty and liability
 
-<!-- pagebreak -->
+### Warranty
 
-# 6. Signatures
+- The Provider warrants that all services will be performed in a professional and workmanlike manner
+- The Provider warrants that deliverables will conform to the specifications outlined in the project plan for a period of **30 days** following delivery
 
-This Agreement is executed as of the date first written above.
+### Limitation of Liability
 
-**Provider: {{our_company_name}}**
+- Neither party shall be liable for any indirect, incidental, or consequential damages
+- The Provider\u2019s total liability under this Agreement shall not exceed the total fees paid by the Client
 
-Signature: ________________________
-
-Name: {{our_signatory_name}}
-
-Title: {{our_signatory_title}}
-
-Date: {{signing_date}}
-
----
-
-**Client: {{client_name}}**
-
-Signature: ________________________
-
-Name: {{client_signatory_name}}
-
-Title: {{client_signatory_title}}
-
-Date: {{signing_date}}`
+# 7. Document Signing`
   extractVariables(markdown.value)
 }
 
 // Demo proposal
 function loadDemoProposal() {
+  currentDocId.value = null
   documentType.value = 'proposal'
   markdown.value = `---
 company_name: "{{company_name}}"
@@ -446,6 +520,25 @@ All intellectual property created during this project will be transferred to the
             </div>
             <div class="flex items-center gap-2">
               <UButton
+                icon="i-lucide-plus"
+                variant="ghost"
+                color="neutral"
+                size="sm"
+                @click="handleNewDocument"
+              >
+                New
+              </UButton>
+              <UButton
+                icon="i-lucide-save"
+                variant="soft"
+                color="primary"
+                size="sm"
+                :disabled="isGenerating"
+                @click="handleSave"
+              >
+                {{ currentDocId ? 'Saved' : 'Save' }}
+              </UButton>
+              <UButton
                 icon="i-lucide-download"
                 variant="soft"
                 color="primary"
@@ -473,12 +566,11 @@ All intellectual property created during this project will be transferred to the
             :is-streaming="isGenerating"
           />
 
-          <!-- Contract visual editor -->
-          <ContractEditor
+          <!-- Contract preview -->
+          <ContractPreview
             v-else
             :markdown="markdown"
             :is-streaming="isGenerating"
-            @update:markdown="markdown = $event"
           />
         </div>
       </div>

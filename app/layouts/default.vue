@@ -26,6 +26,14 @@ const isDark = computed({
               Editor
             </UButton>
             <UButton
+              to="/documents"
+              variant="ghost"
+              :color="route.path === '/documents' ? 'primary' : 'neutral'"
+              size="sm"
+            >
+              Documents
+            </UButton>
+            <UButton
               to="/theme"
               variant="ghost"
               :color="route.path === '/theme' ? 'primary' : 'neutral'"

@@ -1,46 +1,59 @@
-export interface ContractPage {
-  content: string
-  type: 'cover' | 'toc' | 'content'
+import type { ContractFrontMatter, ContractSection, ParsedContract } from '~/types/document'
+
+const defaultFrontMatter: ContractFrontMatter = {
+  client_name: '',
+  document_type: '',
+  date: '',
+  supplier_name: '',
+  doc_ref: '',
 }
 
-export function parseContractPages(markdown: string): ContractPage[] {
-  const pages: ContractPage[] = []
+export function parseContractFrontMatter(raw: string): ContractFrontMatter {
+  const fm: Record<string, string> = { ...defaultFrontMatter }
 
-  // Extract cover page
-  const coverMatch = markdown.match(/<!-- coverpage -->([\s\S]*?)<!-- coverpage -->/)
-  if (coverMatch) {
-    pages.push({ content: coverMatch[1].trim(), type: 'cover' })
-    markdown = markdown.replace(coverMatch[0], '')
+  for (const line of raw.split('\n')) {
+    const match = line.match(/^(\w+)\s*:\s*(.+)$/)
+    if (!match) continue
+    const key = match[1]!
+    const value = match[2]!.trim().replace(/^["']|["']$/g, '')
+    fm[key] = value
   }
 
-  // Split remaining content by page breaks
-  const sections = markdown.split(/<!-- pagebreak -->/).filter(s => s.trim())
+  return fm as ContractFrontMatter
+}
 
-  for (const section of sections) {
-    // Check if this section is a TOC
-    const isTOC = section.includes('## Table of Contents') || section.includes('## Contents')
-    pages.push({
-      content: section.trim(),
-      type: isTOC ? 'toc' : 'content'
+export function parseContractMarkdown(markdown: string): ParsedContract {
+  let content = markdown
+  let frontMatter = { ...defaultFrontMatter }
+
+  // Extract YAML front-matter
+  const fmMatch = content.match(/^---\s*\n([\s\S]*?)\n---\s*\n?/)
+  if (fmMatch) {
+    frontMatter = parseContractFrontMatter(fmMatch[1]!)
+    content = content.slice(fmMatch[0]!.length)
+  }
+
+  const sections: ContractSection[] = []
+
+  // Split on top-level headings (# ...)
+  const rawSections = content.split(/(?=^# )/m).filter(s => s.trim())
+
+  for (const raw of rawSections) {
+    const headingMatch = raw.match(/^# (.+)\n?([\s\S]*)/)
+    if (!headingMatch) continue
+
+    const heading = headingMatch[1]!.trim()
+    const body = (headingMatch[2] ?? '').trim()
+
+    // Detect signing sections
+    const isSigning = /signing/i.test(heading)
+
+    sections.push({
+      heading,
+      content: body,
+      type: isSigning ? 'signing' : 'content',
     })
   }
 
-  return pages
-}
-
-export function extractHeadings(markdown: string): { level: number; text: string; id: string }[] {
-  const headings: { level: number; text: string; id: string }[] = []
-  const lines = markdown.split('\n')
-
-  for (const line of lines) {
-    const match = line.match(/^(#{1,3})\s+(.+)$/)
-    if (match) {
-      const level = match[1].length
-      const text = match[2].replace(/\{\{.*?\}\}/g, '').trim()
-      const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-      headings.push({ level, text, id })
-    }
-  }
-
-  return headings
+  return { frontMatter, sections }
 }

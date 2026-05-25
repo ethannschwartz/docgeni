@@ -1,5 +1,5 @@
 export function useContractGenerator() {
-  const markdown = ref('')
+  const markdown = useState('editorMarkdown', () => '')
   const isGenerating = ref(false)
   const error = ref<string | null>(null)
   const progress = ref(0)

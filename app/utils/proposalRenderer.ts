@@ -594,11 +594,11 @@ body {
 /* ══════ STAGE ══════ */
 .stage-content {
   display: grid;
-  grid-template-columns: 25% 70%;
+  grid-template-columns: 30% 65%;
   column-gap: 5%;
   padding-top: 25%;
 }
-.stage-left  { grid-column: 1; }
+.stage-left  { grid-column: 1; white-space: nowrap; }
 .stage-right { grid-column: 2; }
 
 .stage-header {

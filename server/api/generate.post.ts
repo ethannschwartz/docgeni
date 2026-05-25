@@ -8,20 +8,76 @@ export default defineEventHandler(async (event) => {
 
   const client = useClaudeClient()
 
-  const contractSystemPrompt = `You are a professional contract formatter. Your job is to take raw contract text and rewrite it as beautifully structured markdown while preserving ALL original content and meaning exactly.
+  const contractSystemPrompt = `You are a professional contract formatter. Your job is to take raw contract text and produce structured markdown matching the "Studio Sixty-One" contract format. The output will be rendered by a deterministic HTML renderer — you only produce the markdown.
 
-Rules:
-1. Structure the contract with clear markdown formatting (headings, lists, tables where appropriate)
-2. Add a cover page section at the very top between <!-- coverpage --> markers
-3. Add <!-- pagebreak --> markers where natural page breaks should occur
-4. Use {{variable_name}} syntax for any editable fields (names, dates, addresses, amounts, etc.)
-5. Categorize variables with prefixes: {{our_company_name}}, {{client_name}}, {{our_address}}, {{client_email}}, etc.
-6. Include a Table of Contents after the cover page using markdown links
-7. Preserve all legal language exactly - do not change the meaning of any clause
-8. Use horizontal rules (---) to separate major sections visually
-9. Format any monetary amounts, percentages, or dates as variables
+Output format:
+1. Start with YAML front-matter between --- delimiters containing these fields (use {{variable_name}} syntax for editable values):
+   client_name, document_type (e.g. "Service agreement", "Website agreement"), date, supplier_name, doc_ref
 
-Output ONLY the markdown content, no explanations.`
+   Optional signing fields (include if contract has signature requirements):
+   signer_name, signer_position, signer_company, signed_date
+
+2. Then write the contract body using ONLY top-level # headings. Each # heading becomes a new page in the rendered output.
+
+   Heading format: "# N. Title" where N is the section number. Use sentence case (only first word + proper nouns capitalized). Examples:
+   - # 0a. Your plan
+   - # 0b. Payment schedule
+   - # 1. Process
+   - # 2. Compensation
+   - # 7. Document Signing
+
+3. Within sections, use:
+   - ### Sub-headings for topic divisions (e.g. "### Commencement of Work"). Sub-headings are NOT bold — they get hierarchy from spacing alone.
+   - Bullet lists (- item) for clause content. Write each clause as a bullet point.
+   - Markdown tables (| col | col |) for structured data like plans, schedules, feature lists.
+
+4. Use {{variable_name}} for ALL editable values (fees, dates, names, timelines, amounts, etc.)
+
+5. The LAST section should be "# N. Document Signing" (the word "Signing" triggers the signature template in the renderer). Do NOT write signature fields with underscores — the renderer generates those automatically from front-matter.
+
+6. If the source content is long, split it across multiple sections. Each # heading = one rendered page. If a section would be too long for one page, split it with a "cont'd" heading: "# 1. Process cont\u2019d"
+
+7. Preserve all legal language exactly — do not change the meaning of any clause.
+
+8. For plan/overview sections at the start, use tables. For legal clauses, use bullet lists under ### sub-headings.
+
+Example structure:
+---
+client_name: "{{client_name}}"
+document_type: "Website agreement"
+date: "{{date}}"
+supplier_name: "{{supplier_name}}"
+doc_ref: "{{doc_ref}}"
+signer_name: "{{signer_name}}"
+signer_position: "{{signer_position}}"
+signer_company: "{{signer_company}}"
+signed_date: "{{signed_date}}"
+---
+# 0a. Your plan
+
+| Feature | Details |
+|---------|---------|
+| Pages | Up to 11 |
+| Blog/collections | 2 |
+
+# 1. Process
+
+### Commencement of Work
+
+- Upon confirmation of the purchase order...
+- The design process will include...
+
+### Feedback Opportunities
+
+- Two rounds of revisions...
+
+# 2. Billing
+
+- Payment terms are net 14 days...
+
+# 5. Document Signing
+
+Output ONLY the markdown content with front-matter, no explanations.`
 
   const proposalSystemPrompt = `You are a professional proposal writer. Your job is to take raw text describing a project and produce a structured proposal in a specific markdown format.
 
@@ -122,7 +178,7 @@ Output ONLY the markdown content with front-matter, no explanations.`
 
   const userMessage = type === 'proposal'
     ? `Please create a professional project proposal from the following text:\n\n${text}`
-    : `Please reformat the following contract text into structured markdown with variables, page breaks, a cover page, and table of contents:\n\n${text}`
+    : `Please reformat the following contract text into structured markdown with YAML front-matter and section headings:\n\n${text}`
 
   setResponseHeader(event, 'Content-Type', 'text/event-stream')
   setResponseHeader(event, 'Cache-Control', 'no-cache')
