@@ -436,6 +436,61 @@ body {
 }
 `
 
+// ─── Pagination script (runs inside iframe to split overflowing pages) ──────
+
+function getPaginationScript(): string {
+  // Use a right single quote for "cont'd"
+  const contd = " cont\u2019d"
+  return `<script>
+(function(){
+var ruler=document.createElement('div');
+ruler.style.cssText='height:297mm;position:absolute;visibility:hidden';
+document.body.appendChild(ruler);
+var PAGE_H=ruler.offsetHeight;
+ruler.remove();
+var CONTD='${contd}';
+function run(){
+var safety=0;
+while(safety++<100){
+var didSplit=false;
+var pages=document.querySelectorAll('.page:not(.cover)');
+for(var i=0;i<pages.length;i++){
+var page=pages[i];
+var textCol=page.querySelector('.text-column');
+if(!textCol||textCol.children.length<=1)continue;
+page.style.overflow='visible';
+var real=page.scrollHeight;
+page.style.overflow='';
+if(real<=PAGE_H)continue;
+var heading=page.querySelector('.section-heading');
+var pageRect=page.getBoundingClientRect();
+var maxBot=pageRect.top+PAGE_H-120;
+var ch=Array.from(textCol.children);
+var si=ch.length;
+for(var j=0;j<ch.length;j++){
+if(ch[j].getBoundingClientRect().bottom>maxBot){si=j;break;}
+}
+if(si<1)si=1;
+if(si>=ch.length)continue;
+var base=heading?heading.textContent.replace(new RegExp(CONTD+'$'),''):'';
+var footer=page.querySelector('.footer');
+var np=document.createElement('section');
+np.className='page';
+np.innerHTML='<div class="content"><h2 class="section-heading">'+base+CONTD+'</h2><div class="text-column"></div></div>'+(footer?footer.outerHTML:'');
+var ntc=np.querySelector('.text-column');
+for(var k=ch.length-1;k>=si;k--)ntc.insertBefore(ch[k],ntc.firstChild);
+page.parentNode.insertBefore(np,page.nextSibling);
+didSplit=true;break;
+}
+if(!didSplit)break;
+}
+}
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(run);
+else window.addEventListener('load',run);
+})();
+<` + `/script>`
+}
+
 // ─── Main export ────────────────────────────────────────────────────────────
 
 export function renderContractHtml(contract: ParsedContract, filledVars: Record<string, string> = {}): string {
@@ -464,6 +519,7 @@ export function renderContractHtml(contract: ParsedContract, filledVars: Record<
 </head>
 <body>
 ${pages.join('\n')}
+${getPaginationScript()}
 </body>
 </html>`
 }
