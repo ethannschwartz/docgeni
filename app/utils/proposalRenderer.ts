@@ -125,7 +125,6 @@ function renderCover(fm: ProposalFrontMatter, vars: Record<string, string>): str
       <div class="body inv">${client}</div>
     </div>
   </div>
-  <div class="footer-url inv">${domain}</div>
 </div>`
 }
 

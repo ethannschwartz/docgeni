@@ -12,7 +12,8 @@ const { documentType } = useProposalState()
 const { createDocument, updateDocument, getDocument, loadFromStorage } = useDocuments()
 
 const sidebarOpen = ref(true)
-const showRawMarkdown = ref(false)
+type ViewMode = 'preview' | 'markdown' | 'sections'
+const viewMode = ref<ViewMode>('preview')
 const currentDocId = useState<string | null>('currentDocId', () => null)
 const autoSaveTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 
@@ -509,13 +510,31 @@ All intellectual property created during this project will be transferred to the
                 @click="sidebarOpen = !sidebarOpen"
               />
               <UButton
-                :icon="showRawMarkdown ? 'i-lucide-eye' : 'i-lucide-code'"
-                variant="ghost"
+                icon="i-lucide-eye"
+                :variant="viewMode === 'preview' ? 'soft' : 'ghost'"
                 color="neutral"
                 size="sm"
-                @click="showRawMarkdown = !showRawMarkdown"
+                @click="viewMode = 'preview'"
               >
-                {{ showRawMarkdown ? 'Preview' : 'Markdown' }}
+                Preview
+              </UButton>
+              <UButton
+                icon="i-lucide-layout-list"
+                :variant="viewMode === 'sections' ? 'soft' : 'ghost'"
+                color="neutral"
+                size="sm"
+                @click="viewMode = 'sections'"
+              >
+                Sections
+              </UButton>
+              <UButton
+                icon="i-lucide-code"
+                :variant="viewMode === 'markdown' ? 'soft' : 'ghost'"
+                color="neutral"
+                size="sm"
+                @click="viewMode = 'markdown'"
+              >
+                Markdown
               </UButton>
             </div>
             <div class="flex items-center gap-2">
@@ -551,13 +570,16 @@ All intellectual property created during this project will be transferred to the
             </div>
           </div>
 
-          <!-- Raw markdown toggle -->
-          <div v-if="showRawMarkdown" class="mb-8">
+          <!-- Raw markdown -->
+          <div v-if="viewMode === 'markdown'" class="mb-8">
             <textarea
               v-model="markdown"
               class="w-full h-[600px] p-4 font-mono text-sm bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl resize-y focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
+
+          <!-- Section editor -->
+          <SectionEditor v-else-if="viewMode === 'sections'" />
 
           <!-- Proposal preview -->
           <ProposalPreview
