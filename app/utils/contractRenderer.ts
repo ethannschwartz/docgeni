@@ -117,20 +117,17 @@ function renderCover(fm: ContractFrontMatter, vars: Record<string, string>): str
   const docType = v(vars, fm, 'document_type')
   const brandSvg = fm.brand_mark_svg
 
-  const mark = brandSvg || `<svg class="brand-mark"
-       viewBox="0 0 640 760"
-       xmlns="http://www.w3.org/2000/svg"
-       width="460" height="546"
-       style="position:absolute; right:-40px; bottom:-60px;">
-    <rect x="0" y="20" width="300" height="440" rx="150" fill="#EDEEE6"/>
-    <circle cx="430" cy="180" r="170" fill="#EDEEE6"/>
-    <circle cx="430" cy="580" r="200" fill="#EDEEE6"/>
+  const mark = brandSvg || `<svg class="brand-mark" viewBox="0 0 640 760" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="20" width="300" height="440" rx="150" fill="#EDEEE6" opacity="0.12"/>
+    <circle cx="430" cy="180" r="170" fill="#EDEEE6" opacity="0.10"/>
+    <circle cx="430" cy="580" r="200" fill="#EDEEE6" opacity="0.08"/>
   </svg>`
 
   return `<section class="page cover">
   <div class="cover-title">
-    <div>${clientName}</div>
-    <div>${docType}</div>
+    <div class="cover-client">${clientName}</div>
+    <div class="cover-rule"></div>
+    <div class="cover-doctype">${docType}</div>
   </div>
   ${mark}
   ${renderFooter(fm, vars)}
@@ -154,42 +151,48 @@ function renderContentPage(section: ContractSection, fm: ContractFrontMatter, va
 
 function renderSigningPage(section: ContractSection, fm: ContractFrontMatter, vars: Record<string, string>): string {
   const heading = interpolate(section.heading, vars)
-  const signerName = v(vars, fm, 'signer_name')
-  const signerPosition = v(vars, fm, 'signer_position')
-  const signerCompany = v(vars, fm, 'signer_company')
-  const signedDate = v(vars, fm, 'signed_date')
-  const signedDatetime = v(vars, fm, 'signed_datetime')
-  const sigSvg = fm.signer_signature_svg
+  const body = mdToHtml(section.content, vars)
+
+  const sig1Img = vars['signer_signature_svg'] || fm.signer_signature_svg || ''
+  const sig2Img = vars['signer_2_signature_svg'] || fm.signer_2_signature_svg || ''
+  const clientSigImg = vars['client_signature_svg'] || fm.client_signature_svg || ''
+  const signedDate = v(vars, fm, 'signed_date') || v(vars, fm, 'date')
+
+  function sigImgHtml(src: string): string {
+    if (!src) return ''
+    return src.startsWith('<') ? src : `<img src="${src}" class="sig-img" />`
+  }
 
   return `<section class="page">
   <div class="content">
     <h2 class="section-heading">${heading}</h2>
-    <div class="sig-stack">
-      <div class="sig-field">
-        <div class="sig-label">Full name</div>
-        ${signerName ? `<div class="sig-value">${signerName}</div>` : ''}
+    ${body ? `<div class="text-column">${body}</div>` : ''}
+    <div class="sig-row">
+      <div class="sig-block">
+        <div class="sig-drawing">${sigImgHtml(sig1Img)}</div>
         <div class="sig-line"></div>
+        <div class="sig-under">Benjamin Brookarsh</div>
+        <div class="sig-under-detail">CTO</div>
+        <div class="sig-date-value">${signedDate}</div>
+        <div class="sig-line"></div>
+        <div class="sig-under-detail">Date</div>
       </div>
-      <div class="sig-field">
-        <div class="sig-label">Position</div>
-        ${signerPosition ? `<div class="sig-value">${signerPosition}</div>` : ''}
+      <div class="sig-block">
+        <div class="sig-drawing">${sigImgHtml(sig2Img)}</div>
         <div class="sig-line"></div>
+        <div class="sig-under">Ethan Schwartz</div>
+        <div class="sig-under-detail">CEO</div>
+        <div class="sig-date-value">${signedDate}</div>
+        <div class="sig-line"></div>
+        <div class="sig-under-detail">Date</div>
       </div>
-      <div class="sig-field">
-        <div class="sig-label">Company name</div>
-        ${signerCompany ? `<div class="sig-value">${signerCompany}</div>` : ''}
+      <div class="sig-block">
+        <div class="sig-drawing">${sigImgHtml(clientSigImg)}</div>
         <div class="sig-line"></div>
-      </div>
-      <div class="sig-field">
-        <div class="sig-label">Date</div>
-        ${signedDate ? `<div class="sig-value">${signedDate}</div>` : ''}
+        <div class="sig-under">Client</div>
+        <div class="sig-date-space"></div>
         <div class="sig-line"></div>
-      </div>
-      <div class="sig-field">
-        <div class="sig-label">Signature</div>
-        <div class="sig-signature">${sigSvg || ''}</div>
-        ${signedDatetime ? `<div class="sig-cite">${signerName} (${signedDatetime})</div>` : ''}
-        <div class="sig-line"></div>
+        <div class="sig-under-detail">Date</div>
       </div>
     </div>
   </div>
@@ -282,14 +285,29 @@ body {
   position: absolute;
   top: 88px;
   left: 88px;
+  right: 88px;
   font-family: var(--font-serif);
-  font-size: 40px;
-  font-weight: 400;
-  line-height: 1.15;
   color: var(--ink-inv);
 }
-.cover-title div {
-  white-space: nowrap;
+.cover-client {
+  font-size: 38px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.cover-rule {
+  width: 48px;
+  height: 1px;
+  background: var(--ink-inv);
+  opacity: 0.4;
+  margin: 24px 0;
+}
+.cover-doctype {
+  font-size: 18px;
+  font-weight: 300;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  opacity: 0.7;
 }
 
 .section-heading {
@@ -389,42 +407,48 @@ body {
 }
 
 /* ── Signature fields ── */
-.sig-stack {
-  max-width: 440px;
-  margin-top: 32px;
+.sig-row {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  margin-top: 40px;
+  max-width: 360px;
 }
-.sig-field {
-  margin-bottom: 36px;
-}
-.sig-label {
-  font-size: 14px;
-  font-weight: 400;
-  margin-bottom: 14px;
-  color: var(--ink);
-}
-.sig-value {
-  font-size: 11px;
-  font-weight: 400;
-  padding-left: 8px;
-  margin-bottom: 12px;
-  color: var(--ink);
-}
-.sig-signature {
-  padding-left: 8px;
-  height: 42px;
+.sig-block {}
+.sig-drawing {
+  height: 44px;
   display: flex;
   align-items: flex-end;
 }
-.sig-cite {
-  font-size: 10px;
-  font-weight: 400;
-  padding-left: 8px;
-  color: var(--ink);
-  margin-top: 2px;
+.sig-img {
+  max-width: 200px;
+  max-height: 40px;
 }
 .sig-line {
   height: 1px;
-  background: var(--rule);
+  background: var(--ink);
+  margin-top: 4px;
+}
+.sig-under {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-top: 6px;
+}
+.sig-under-detail {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-top: 1px;
+}
+.sig-date-space {
+  height: 28px;
+}
+.sig-date-value {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink);
+  margin-top: 16px;
 }
 
 /* ── Brand mark (cover only) ── */
@@ -432,6 +456,8 @@ body {
   position: absolute;
   right: -40px;
   bottom: -60px;
+  width: 460px;
+  height: 546px;
   z-index: 1;
 }
 `

@@ -134,14 +134,21 @@ function renderLetter(page: ProposalPage, fm: ProposalFrontMatter, vars: Record<
   const signerRole = v(vars, fm, 'signer_role')
   const sigSvg = vars['signer_signature_svg'] || fm.signer_signature_svg || ''
 
+  const signer2Name = v(vars, fm, 'signer_2_name')
+  const signer2Role = v(vars, fm, 'signer_2_role')
+  const sig2Svg = vars['signer_2_signature_svg'] || fm.signer_2_signature_svg || ''
+  function renderSigImg(svg: string): string {
+    if (!svg) return ''
+    return svg.startsWith('<') ? svg : `<img src="${svg}" style="max-width:180px;max-height:80px" />`
+  }
+
   const defaultSig = `<svg width="180" height="60" viewBox="0 0 180 60" xmlns="http://www.w3.org/2000/svg">
         <path d="M 10 40 Q 30 10, 50 30 T 90 35 Q 110 45, 140 25 L 170 30" fill="none" stroke="#111" stroke-width="1.5" stroke-linecap="round"/>
         <path d="M 145 30 L 165 30" fill="none" stroke="#111" stroke-width="1"/>
       </svg>`
 
-  const sigContent = sigSvg
-    ? (sigSvg.startsWith('<') ? sigSvg : `<img src="${sigSvg}" style="max-width:180px;max-height:80px" />`)
-    : defaultSig
+  const sigContent = sigSvg ? renderSigImg(sigSvg) : defaultSig
+  const sig2Content = renderSigImg(sig2Svg)
 
   return `<div class="page letter">
   ${pageChrome(fm, vars)}
@@ -149,10 +156,17 @@ function renderLetter(page: ProposalPage, fm: ProposalFrontMatter, vars: Record<
     <h1 class="display">Hello.</h1>
     <hr class="rule">
     <div class="letter-body">${body}</div>
-    <div class="letter-sig">
-      ${sigContent}
-      ${signerName ? `<div class="label" style="margin-top:16px">${signerName}</div>` : ''}
-      ${signerRole ? `<p class="body">${signerRole}</p>` : ''}
+    <div class="letter-sigs">
+      <div class="letter-sig">
+        ${sigContent}
+        ${signerName ? `<div class="label" style="margin-top:16px">${signerName}</div>` : ''}
+        ${signerRole ? `<p class="body">${signerRole}</p>` : ''}
+      </div>
+      ${(signer2Name || sig2Svg) ? `<div class="letter-sig">
+        ${sig2Content}
+        ${signer2Name ? `<div class="label" style="margin-top:16px">${signer2Name}</div>` : ''}
+        ${signer2Role ? `<p class="body">${signer2Role}</p>` : ''}
+      </div>` : ''}
     </div>
   </div>
 </div>`
@@ -274,7 +288,7 @@ function renderSummary(page: ProposalPage, fm: ProposalFrontMatter, vars: Record
     <hr class="rule">
     <div class="summary-body">${body}</div>
     <hr class="rule" style="margin-top:48px">
-    <div class="client-acceptance">Client acceptance</div>
+    <div class="client-acceptance">Client Signature</div>
     <div class="sig-fields">
       <div class="sig-field">
         <div class="label">Name</div>
@@ -283,7 +297,7 @@ function renderSummary(page: ProposalPage, fm: ProposalFrontMatter, vars: Record
       </div>
       <div class="sig-field">
         <div class="label">Signed</div>
-        <div class="sig-space"></div>
+        <div class="sig-space">${(vars['client_signature_svg'] || fm.client_signature_svg) ? `<img src="${vars['client_signature_svg'] || fm.client_signature_svg}" style="max-width:180px;max-height:48px" />` : ''}</div>
         <div class="sig-rule"></div>
       </div>
       <div class="sig-field">
@@ -593,8 +607,14 @@ body {
 .letter-body .body {
   margin-bottom: 12px;
 }
-.letter-sig {
+.letter-sigs {
+  display: flex;
+  gap: 48px;
   margin-top: 48px;
+  flex-wrap: wrap;
+}
+.letter-sig {
+  min-width: 140px;
 }
 
 /* ══════ STAGE ══════ */

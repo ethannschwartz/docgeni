@@ -29,6 +29,11 @@ export interface ProposalFrontMatter {
   signer_name: string
   signer_role: string
   signer_signature_svg?: string
+  signer_2_name?: string
+  signer_2_role?: string
+  signer_2_signature_svg?: string
+  client_signature_name?: string
+  client_signature_svg?: string
   socials: string[]
   [key: string]: string | string[] | undefined
 }
@@ -69,6 +74,13 @@ export interface ContractFrontMatter {
   signed_date?: string
   signed_datetime?: string
   signer_signature_svg?: string
+  signer_2_name?: string
+  signer_2_position?: string
+  signer_2_company?: string
+  signer_2_signature_svg?: string
+  signed_2_date?: string
+  client_signature_name?: string
+  client_signature_svg?: string
   [key: string]: string | undefined
 }
 
