@@ -28,8 +28,9 @@ export interface ProposalFrontMatter {
   company_domain: string
   signer_name: string
   signer_role: string
+  signer_signature_svg?: string
   socials: string[]
-  [key: string]: string | string[]
+  [key: string]: string | string[] | undefined
 }
 
 export interface StageMeta {

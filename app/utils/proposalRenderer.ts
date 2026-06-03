@@ -133,6 +133,16 @@ function renderLetter(page: ProposalPage, fm: ProposalFrontMatter, vars: Record<
   const body = mdToHtml(page.content, vars)
   const signerName = v(vars, fm, 'signer_name')
   const signerRole = v(vars, fm, 'signer_role')
+  const sigSvg = vars['signer_signature_svg'] || fm.signer_signature_svg || ''
+
+  const defaultSig = `<svg width="180" height="60" viewBox="0 0 180 60" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 10 40 Q 30 10, 50 30 T 90 35 Q 110 45, 140 25 L 170 30" fill="none" stroke="#111" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M 145 30 L 165 30" fill="none" stroke="#111" stroke-width="1"/>
+      </svg>`
+
+  const sigContent = sigSvg
+    ? (sigSvg.startsWith('<') ? sigSvg : `<img src="${sigSvg}" style="max-width:180px;max-height:80px" />`)
+    : defaultSig
 
   return `<div class="page letter">
   ${pageChrome(fm, vars)}
@@ -141,10 +151,7 @@ function renderLetter(page: ProposalPage, fm: ProposalFrontMatter, vars: Record<
     <hr class="rule">
     <div class="letter-body">${body}</div>
     <div class="letter-sig">
-      <svg width="180" height="60" viewBox="0 0 180 60" xmlns="http://www.w3.org/2000/svg">
-        <path d="M 10 40 Q 30 10, 50 30 T 90 35 Q 110 45, 140 25 L 170 30" fill="none" stroke="#111" stroke-width="1.5" stroke-linecap="round"/>
-        <path d="M 145 30 L 165 30" fill="none" stroke="#111" stroke-width="1"/>
-      </svg>
+      ${sigContent}
       ${signerName ? `<div class="label" style="margin-top:16px">${signerName}</div>` : ''}
       ${signerRole ? `<p class="body">${signerRole}</p>` : ''}
     </div>
