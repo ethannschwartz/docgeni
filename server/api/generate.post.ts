@@ -94,6 +94,13 @@ Output format:
      ## Time — single line with the timeline (e.g. {{stage_1_time}})
      ## Deliverables — bullet list using - dashes
      ## Note — brief note about the stage
+   - # Pricing | Stage Title — itemized pricing breakdown for each stage, placed AFTER all Stage sections and BEFORE # Fee. Use a two-column table (Item | Cost) with {{variable}} placeholders for each line item. Last row should be **Subtotal** with the stage fee variable. Example:
+     # Pricing | Discovery & Research
+     | Item | Cost |
+     |------|------|
+     | {{discovery_item_1}} | {{discovery_cost_1}} |
+     | {{discovery_item_2}} | {{discovery_cost_2}} |
+     | **Subtotal** | **{{stage_1_fee}}** |
    - # Fee — overall fee summary table with columns: Stage | Description | Cost. Last row should be **Total**. After the table, add **Payment Terms:** and **All costs exclude:** paragraphs.
    - # Summary — total fee, timeline, and validity statement. Keep it brief.
    - # Appendix — terms and conditions using ## sub-headings
@@ -141,6 +148,22 @@ Dear {{client_name}},
 
 ## Note
 One round of consolidated feedback included.
+
+# Pricing | Discovery & Research
+
+| Item | Cost |
+|------|------|
+| {{discovery_item_1}} | {{discovery_cost_1}} |
+| {{discovery_item_2}} | {{discovery_cost_2}} |
+| **Subtotal** | **{{stage_1_fee}}** |
+
+# Pricing | Design & Prototyping
+
+| Item | Cost |
+|------|------|
+| {{design_item_1}} | {{design_cost_1}} |
+| {{design_item_2}} | {{design_cost_2}} |
+| **Subtotal** | **{{stage_2_fee}}** |
 
 # Fee
 

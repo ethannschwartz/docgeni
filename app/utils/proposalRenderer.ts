@@ -213,6 +213,67 @@ function renderStage(page: ProposalPage, fm: ProposalFrontMatter, vars: Record<s
 </div>`
 }
 
+function renderPricing(page: ProposalPage, fm: ProposalFrontMatter, vars: Record<string, string>): string {
+  const title = page.pricingTitle || 'Pricing'
+  const content = interpolate(page.content, vars)
+  const lines = content.split('\n')
+  const tableLines: string[] = []
+  const otherLines: string[] = []
+  let foundTable = false
+
+  for (const line of lines) {
+    if (line.includes('|') && line.trim().startsWith('|')) {
+      foundTable = true
+      if (!/^\|[\s\-:|]+\|$/.test(line.trim())) tableLines.push(line)
+    } else {
+      otherLines.push(line)
+    }
+  }
+
+  // Parse table — extract subtotal row
+  let tableHtml = ''
+  let subtotalLabel = ''
+  let subtotalValue = ''
+  if (tableLines.length) {
+    const parseRow = (r: string) => r.split('|').filter(c => c.trim()).map(c => c.trim())
+    const header = parseRow(tableLines[0]!)
+    const bodyRows = tableLines.slice(1).map(parseRow)
+
+    const lastRow = bodyRows[bodyRows.length - 1]
+    if (lastRow && lastRow.some(c => /\*\*subtotal\*\*/i.test(c) || /^subtotal$/i.test(c))) {
+      const subRow = bodyRows.pop()!
+      subtotalLabel = 'Subtotal'
+      subtotalValue = (subRow[subRow.length - 1] || '').replace(/\*\*/g, '')
+    }
+
+    const lastIdx = header.length - 1
+    tableHtml = `<table class="fee-table">
+<thead><tr>${header.map((h, i) => `<th${i === lastIdx ? ' class="right"' : ''}>${h}</th>`).join('')}</tr></thead>
+<tbody>${bodyRows.map(row => `<tr>${row.map((c, i) => `<td${i === lastIdx ? ' class="right"' : ''}>${c.replace(/\*\*/g, '')}</td>`).join('')}</tr>`).join('\n')}</tbody>
+</table>`
+  }
+
+  const extraHtml = mdToHtml(otherLines.join('\n').trim(), vars)
+
+  return `<div class="page pricing">
+  ${pageChrome(fm, vars)}
+  <div class="pricing-content">
+    <h1 class="display">${title}.</h1>
+    <hr class="rule">
+    ${tableHtml}
+    ${(subtotalLabel && subtotalValue) ? `
+    <div class="fee-total">
+      <hr class="rule" style="margin-top:48px">
+      <div class="fee-total-row">
+        <span class="stat">${subtotalLabel}</span>
+        <span class="stat">${subtotalValue}</span>
+      </div>
+    </div>` : ''}
+    ${extraHtml ? `<div class="fee-terms">${extraHtml}</div>` : ''}
+  </div>
+</div>`
+}
+
 function renderFee(page: ProposalPage, fm: ProposalFrontMatter, vars: Record<string, string>): string {
   // Split content: find the table, then terms after it
   const content = interpolate(page.content, vars)
@@ -355,6 +416,7 @@ function renderPage(page: ProposalPage, fm: ProposalFrontMatter, vars: Record<st
     case 'cover': return renderCover(fm, vars)
     case 'hello': return renderLetter(page, fm, vars)
     case 'stage': return renderStage(page, fm, vars)
+    case 'pricing': return renderPricing(page, fm, vars)
     case 'fee': return renderFee(page, fm, vars)
     case 'summary': return renderSummary(page, fm, vars)
     case 'appendix': return renderAppendix(page, fm, vars)
@@ -414,6 +476,7 @@ body {
 .cover   { background: var(--bg-dark); color: var(--ink-inv); }
 .letter  { background: var(--bg-blush); color: var(--ink); }
 .stage   { background: var(--bg-grey); color: var(--ink); }
+.pricing { background: var(--bg-grey); color: var(--ink); }
 .fee     { background: var(--bg-grey); color: var(--ink); }
 .summary { background: var(--bg-grey); color: var(--ink); }
 .appendix{ background: var(--bg-grey); color: var(--ink); }
@@ -661,6 +724,11 @@ body {
   margin-top: 4px;
 }
 .footnote-body .dash-list li { font-size: 13px; }
+
+/* ══════ PRICING ══════ */
+.pricing-content {
+  padding-top: 18%;
+}
 
 /* ══════ FEE ══════ */
 .fee-content {

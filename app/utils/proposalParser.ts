@@ -130,6 +130,10 @@ export function parseProposalMarkdown(markdown: string): ParsedProposal {
         content: stageBody,
         meta
       })
+    } else if (/^pricing\s*\|\s*/i.test(heading)) {
+      const pricingMatch = heading.match(/^Pricing\s*\|\s*(.+)/i)
+      const pricingTitle = pricingMatch ? pricingMatch[1]!.trim() : heading
+      pages.push({ type: 'pricing', title: heading, pricingTitle, content: body })
     } else if (/^fee$/i.test(heading)) {
       pages.push({ type: 'fee', title: heading, content: body })
     } else if (/^summary$/i.test(heading)) {

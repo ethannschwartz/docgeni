@@ -46,8 +46,9 @@ export interface StageMeta {
 }
 
 export interface ProposalPage {
-  type: 'cover' | 'hello' | 'stage' | 'fee' | 'summary' | 'appendix' | 'thankyou'
+  type: 'cover' | 'hello' | 'stage' | 'pricing' | 'fee' | 'summary' | 'appendix' | 'thankyou'
   title?: string
+  pricingTitle?: string
   stageNumber?: number
   stageVersion?: string
   content: string
